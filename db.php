@@ -5,7 +5,7 @@ $username = 'if0_41582905';
 $password = 'YrAulJXbozzmq'; 
 
 try {
-    // تم تعديل الترميز هنا إلى utf8mb4 لدعم اللغة العربية بالكامل
+
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
