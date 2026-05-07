@@ -2,7 +2,6 @@
 session_start();
 require_once 'db.php';
 
-// التحقق من صلاحيات الإدارة
 if (!isset($_SESSION['admin_id'])) {
     header("Location: admin_login.php");
     exit;
@@ -10,9 +9,7 @@ if (!isset($_SESSION['admin_id'])) {
 
 $lang = $_SESSION['admin_lang'] ?? 'ar';
 
-// ==============================
-// نصوص الترجمة (لغتين)
-// ==============================
+
 $t = [
     'ar' => [
         'dashboard' => 'لوحة التحكم',
@@ -121,25 +118,20 @@ $dir = $lang === 'ar' ? 'rtl' : 'ltr';
 $msg = "";
 $msgType = "success";
 
-// ==============================
-// معالجة الأوامر (Actions)
-// ==============================
 
-// تغيير اللغة
+
 if (isset($_GET['lang'])) {
     $_SESSION['admin_lang'] = in_array($_GET['lang'], ['ar','en']) ? $_GET['lang'] : 'ar';
     header("Location: admin_dashboard.php?tab=" . ($_GET['tab'] ?? 'overview'));
     exit;
 }
 
-// تسجيل الخروج
 if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: admin_login.php");
     exit;
 }
 
-// حفظ الجداول والمواعيد
 if (isset($_POST['save_schedule'])) {
     $days = $_POST['available_days'] ?? [];
     $slots = $_POST['time_slots'] ?? [];
@@ -157,7 +149,6 @@ if (isset($_POST['save_schedule'])) {
     }
 }
 
-// تحديث حالة الطلب
 if (isset($_POST['update_order'])) {
     $oid = intval($_POST['order_id']);
     $new_status = htmlspecialchars($_POST['new_status']);
@@ -165,7 +156,6 @@ if (isset($_POST['update_order'])) {
     $msg = $_['order_updated'];
 }
 
-// تحديث سعر الفحص
 if (isset($_POST['update_price'])) {
     $sid = intval($_POST['service_id']);
     $new_price = floatval($_POST['new_price']);
@@ -173,7 +163,6 @@ if (isset($_POST['update_price'])) {
     $msg = $_['price_updated'];
 }
 
-// إضافة مختبر جديد
 if (isset($_POST['add_lab'])) {
     $lab_name  = htmlspecialchars($_POST['lab_name_new']);
     $lab_loc   = htmlspecialchars($_POST['lab_location']);
@@ -182,11 +171,8 @@ if (isset($_POST['add_lab'])) {
     $msg = $_['lab_added'];
 }
 
-// ==============================
-// جلب البيانات للعرض (Fetch Data)
-// ==============================
 
-// الإحصائيات
+
 try {
     $total    = $pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
     $pend     = $pdo->query("SELECT COUNT(*) FROM bookings WHERE status='قيد المعالجة'")->fetchColumn();
@@ -195,7 +181,6 @@ try {
     $revenue  = $pdo->query("SELECT COALESCE(SUM(total_price),0) FROM bookings WHERE status!='ملغي'")->fetchColumn();
 } catch (Exception $e) { $total = $pend = $done = $canc = $revenue = 0; }
 
-// الطلبات
 try {
     $orders = $pdo->query("
         SELECT b.id, b.appointment_date, b.appointment_time, b.status, b.total_price, b.city, b.address,
@@ -206,22 +191,18 @@ try {
     ")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) { $orders = []; }
 
-// الفحوصات للأسعار
 try {
     $services = $pdo->query("SELECT s.id, s.service_name, s.price, l.name as lab_name FROM services s JOIN labs l ON s.lab_id=l.id ORDER BY l.name, s.service_name")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) { $services = []; }
 
-// المختبرات
 try {
     $labs = $pdo->query("SELECT * FROM labs ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) { $labs = []; }
 
-// الرسائل
 try {
     $contacts = $pdo->query("SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT 50")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) { $contacts = []; }
 
-// جدول المواعيد
 try {
     $sched_row = $pdo->query("SELECT value FROM admin_settings WHERE `key`='schedule'")->fetch();
     $schedule = $sched_row ? json_decode($sched_row['value'], true) : ['days'=>[], 'slots'=>[]];
@@ -235,12 +216,10 @@ $active_tab = $_GET['tab'] ?? 'overview';
     <meta charset="UTF-8">
     <title><?= $_['dashboard'] ?> - مختبراتي</title>
     <style>
-        /* مطابقة لتصميم الموقع الأساسي */
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f7fa; margin: 0; }
         
         .admin-layout { display: flex; max-width: 1200px; margin: 40px auto; gap: 30px; padding: 0 20px; align-items: flex-start; }
         
-        /* القائمة الجانبية (Sidebar) */
         .admin-sidebar { width: 250px; background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .admin-sidebar h3 { color: blue; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 15px; }
         .admin-sidebar a { display: block; padding: 12px 15px; margin-bottom: 8px; color: #555; text-decoration: none; border-radius: 8px; font-weight: bold; transition: 0.3s; }
@@ -251,22 +230,18 @@ $active_tab = $_GET['tab'] ?? 'overview';
         .lang-switch { margin-top: 20px; border-top: 2px solid #eee; padding-top: 15px; display: flex; gap: 10px; }
         .lang-switch a { padding: 8px; text-align: center; background: #eee; flex: 1; }
         
-        /* المحتوى الرئيسي (Main Content) */
         .admin-content { flex: 1; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); min-width: 0; }
         .admin-content h2 { color: #333; margin-top: 0; margin-bottom: 25px; }
         
-        /* الإحصائيات (Stats) */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #eee; background: #fafafa; }
         .stat-card h3 { margin: 0; font-size: 28px; color: blue; }
         .stat-card p { margin: 5px 0 0 0; color: #666; font-weight: bold; font-size: 14px; }
         
-        /* الجداول (Tables) */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: <?= $lang==='ar'?'right':'left' ?>; font-size: 14px; }
         th { color: blue; background: #f9f9f9; }
         
-        /* النماذج والأزرار */
         label { display: block; font-weight: bold; margin-bottom: 8px; color: #333; margin-top: 15px; }
         input[type="text"], input[type="number"], input[type="time"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
         .btn { padding: 10px 20px; background: blue; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; text-decoration: none; display: inline-block; }
@@ -275,11 +250,9 @@ $active_tab = $_GET['tab'] ?? 'overview';
         .btn-green:hover { background: #157347; }
         .btn-red { background: #dc3545; color: white; }
         
-        /* التنبيهات */
         .msg { padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 20px; }
         .msg.success { background: #e6f8f0; color: #198754; }
         
-        /* تخصيصات للتبويبات */
         .days-container { display: flex; flex-wrap: wrap; gap: 10px; }
         .days-container label { display: inline-block; background: #f0f0f0; padding: 10px 15px; border-radius: 6px; cursor: pointer; margin: 0; border: 1px solid #ddd; }
         .days-container input:checked + label { background: blue; color: white; border-color: blue; }
@@ -291,12 +264,10 @@ $active_tab = $_GET['tab'] ?? 'overview';
 </head>
 <body>
 
-    <!-- الهيدر الأساسي للموقع -->
     <?php include 'header.php'; ?>
 
     <div class="admin-layout">
         
-        <!-- القائمة الجانبية -->
         <aside class="admin-sidebar">
             <h3><?= $_['welcome'] ?> <?= htmlspecialchars($_SESSION['admin_name']) ?></h3>
             <a href="?tab=overview" class="<?= $active_tab==='overview'?'active':'' ?>">📊 <?= $_['overview'] ?></a>
@@ -313,14 +284,12 @@ $active_tab = $_GET['tab'] ?? 'overview';
             <a href="?logout=1" style="color: #dc3545; margin-top: 10px;">🚪 <?= $_['logout'] ?></a>
         </aside>
 
-        <!-- المحتوى الرئيسي -->
         <main class="admin-content">
             
             <?php if ($msg): ?>
                 <div class="msg <?= $msgType ?>"><?= htmlspecialchars($msg) ?></div>
             <?php endif; ?>
 
-            <!-- تبويب: نظرة عامة -->
             <?php if ($active_tab === 'overview'): ?>
                 <h2><?= $_['overview'] ?></h2>
                 <div class="stats-grid">
@@ -343,7 +312,6 @@ $active_tab = $_GET['tab'] ?? 'overview';
                 </table>
             <?php endif; ?>
 
-            <!-- تبويب: الجداول والمواعيد -->
             <?php if ($active_tab === 'schedule'): ?>
                 <h2><?= $_['schedule'] ?></h2>
                 <form method="POST">
@@ -389,7 +357,6 @@ $active_tab = $_GET['tab'] ?? 'overview';
                 </script>
             <?php endif; ?>
 
-            <!-- تبويب: إدارة الأسعار -->
             <?php if ($active_tab === 'pricing'): ?>
                 <h2><?= $_['pricing'] ?></h2>
                 <table>
@@ -411,7 +378,6 @@ $active_tab = $_GET['tab'] ?? 'overview';
                 </table>
             <?php endif; ?>
 
-            <!-- تبويب: المختبرات -->
             <?php if ($active_tab === 'labs'): ?>
                 <h2><?= $_['labs'] ?></h2>
                 <table>
@@ -430,7 +396,6 @@ $active_tab = $_GET['tab'] ?? 'overview';
                 </form>
             <?php endif; ?>
 
-            <!-- تبويب: الطلبات -->
             <?php if ($active_tab === 'orders'): ?>
                 <h2><?= $_['orders'] ?></h2>
                 <table>
@@ -458,7 +423,6 @@ $active_tab = $_GET['tab'] ?? 'overview';
                 </table>
             <?php endif; ?>
 
-            <!-- تبويب: رسائل التواصل -->
             <?php if ($active_tab === 'contacts'): ?>
                 <h2><?= $_['contacts'] ?></h2>
                 <?php if (empty($contacts)): ?>
