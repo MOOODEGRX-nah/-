@@ -7,7 +7,6 @@
     <style>
         body { font-family: sans-serif; margin: 0; padding: 0; line-height: 1.6; background-color: white; }
         
-        /* تم إزالة أكواد الهيدر القديمة من هنا */
         
         .container { max-width: 800px; margin: 40px auto; border: 1px solid black; padding: 30px; background: white; }
         h1 { color: blue; text-align: center; border-bottom: 1px solid black; padding-bottom: 10px; }
